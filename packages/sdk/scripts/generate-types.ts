@@ -1,6 +1,6 @@
 // Generates src/types/generated.ts from schema/schema.json, the copy of the specification's
 // schema.json. Options:
-//   --sync <spec-repo>  copy schema/draft/schema.json from a checkout of the specification first
+//   --sync <spec-repo>  copy schema/v0/schema.json from a checkout of the specification first
 //   --check             exit 1 when the generated types, or the schema copy (with --sync), differ
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -28,7 +28,7 @@ function emit(path: string, content: string) {
 
 if (syncAt >= 0) {
   const spec = resolve(args[syncAt + 1]);
-  emit(schemaPath, readFileSync(join(spec, "schema", "draft", "schema.json"), "utf8"));
+  emit(schemaPath, readFileSync(join(spec, "schema", "v0", "schema.json"), "utf8"));
 }
 
 const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
