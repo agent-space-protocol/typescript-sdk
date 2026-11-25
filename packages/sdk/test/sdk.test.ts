@@ -378,3 +378,28 @@ test("an episode handler that takes its time holds up nobody", async () => {
     await space.close();
   }
 });
+
+test("a handler that fails still answers", async () => {
+  const space = new Space({
+    vocabulary,
+    capabilities: { state: "external", episode: { tasks: ["a"], evaluator: "evaluator" } },
+    handlers: {
+      observe: () => ({ structure: { things: [] } }),
+      episode: () => {
+        throw new Error("the simulator did not start");
+      },
+    },
+  });
+  const l = await space.listen("ws://127.0.0.1:0");
+  try {
+    const p = await Participant.connect(l.address, { key: generateKey() });
+    await p.join();
+    const out = await p.request({ type: "episode", task: "a" }).done;
+    assert.equal(out.end, "failed");
+    assert.equal(out.reason?.code, "sdk.handler_error");
+    assert.match(out.reason?.text ?? "", /did not start/);
+    await p.close();
+  } finally {
+    await space.close();
+  }
+});

@@ -248,6 +248,13 @@ const DEFAULT_ROLES: Record<string, Role> = {
   guest: { verbs: [] },
 };
 
+/** The outcome of a request whose handler threw something other than Refused: every request with
+ * an ID gets exactly one final answer, also when the implementer's code fails. */
+function handlerFailed(error: unknown): OutcomeFields {
+  const text = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  return { end: "failed", reason: { code: "sdk.handler_error", text } };
+}
+
 /** A space: accepts connections and keeps the protocol for its handlers. */
 export class Space {
   readonly id: string;
@@ -1197,7 +1204,8 @@ export class Space {
       const [entry] = this.#append([{ source: `presence/${presence.id}`, type: "asp.restore", data: { presence: presence.id, snapshot: msg.snapshot } }]);
       this.#finishSimple(presence, msg, { end: "done" }, true, entry.seq);
     } catch (e) {
-      if (!(e instanceof Refused)) throw e;
+      // The handler's own error: an outcome all the same, never silence.
+      if (!(e instanceof Refused)) return this.#finishSimple(presence, msg, handlerFailed(e));
       this.#finishSimple(presence, msg, { end: "refused", reason: reasonOf(e.code, e.text, e.data) });
     }
   }
@@ -1225,7 +1233,7 @@ export class Space {
       const [entry] = this.#append([{ source: "space", type: "asp.score", roles: [evaluator], data: { episode: score.episode, score: score.score } }]);
       this.#finishSimple(presence, msg, { end: "done", result: score as unknown as JSONValue }, false, entry.seq);
     } catch (e) {
-      if (!(e instanceof Refused)) throw e;
+      if (!(e instanceof Refused)) return this.#finishSimple(presence, msg, handlerFailed(e), msg.type === "episode");
       this.#finishSimple(presence, msg, { end: "refused", reason: reasonOf(e.code, e.text, e.data) }, msg.type === "episode");
     } finally {
       this.#episodes.delete(key);
