@@ -343,3 +343,38 @@ test("an admit handler can refuse", async () => {
   p.close();
   await space.close();
 });
+
+test("an episode handler that takes its time holds up nobody", async () => {
+  let release!: () => void;
+  const started = new Promise<void>((r) => (release = r));
+  let resets = 0;
+  const space = new Space({
+    vocabulary,
+    capabilities: { state: "external", episode: { tasks: ["a"], evaluator: "evaluator" } },
+    handlers: {
+      observe: () => ({ structure: { things: [] } }),
+      episode: async ({ task }) => {
+        resets += 1;
+        await started;
+        return { episode: `e-${task}` };
+      },
+    },
+  });
+  const l = await space.listen("ws://127.0.0.1:0");
+  try {
+    const p = await Participant.connect(l.address, { key: generateKey() });
+    await p.join();
+    const episode = p.request({ type: "episode", id: "ep-1", task: "a" });
+    p.request({ type: "episode", id: "ep-1", task: "a" }); // sent again while it waits
+    const seen = await p.observe(); // answered while the episode is being started
+    assert.equal(typeof seen.seq, "number");
+    release();
+    const out = await episode.done;
+    assert.equal(out.end, "done");
+    assert.equal((out.result as { episode: string }).episode, "e-a");
+    assert.equal(resets, 1);
+    await p.close();
+  } finally {
+    await space.close();
+  }
+});

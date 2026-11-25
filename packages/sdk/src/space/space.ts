@@ -138,9 +138,12 @@ export interface SpaceHandlers {
   admit?(request: { participant?: string; role: string; pass?: Record<string, unknown> }): string;
   /** Decides what is done with presentation preferences. */
   presentation?(presentation: Presentation): Record<string, PresentationUse>;
-  /** Capability `episode`. */
-  episode?(request: { task?: string; seed?: number; presence: PresenceInfo }): { episode: string } & Record<string, JSONValue>;
-  score?(request: { episode?: string; presence: PresenceInfo }): { episode: string; score: JSONValue };
+  /** Capability `episode`. Either may return a promise: a space that starts an episode of
+   * another system (an adapter) waits for it without holding up its other participants. */
+  episode?(request: { task?: string; seed?: number; presence: PresenceInfo }):
+    ({ episode: string } & Record<string, JSONValue>) | Promise<{ episode: string } & Record<string, JSONValue>>;
+  score?(request: { episode?: string; presence: PresenceInfo }):
+    { episode: string; score: JSONValue } | Promise<{ episode: string; score: JSONValue }>;
   /** Capability `snapshot`. */
   snapshot?(): JSONValue;
   restore?(snapshot: JSONValue): void;
@@ -448,7 +451,7 @@ export class Space {
         return this.#onSnapshot(presence!, m);
       case "episode":
       case "score":
-        return this.#onEpisode(presence!, m);
+        return void this.#onEpisode(presence!, m).catch((e) => console.error("asp: an episode or score handler failed:", e));
       case "pause":
       case "resume":
         return this.#onPause(presence!, m);
@@ -1199,24 +1202,33 @@ export class Space {
     }
   }
 
-  #onEpisode(presence: Presence, msg: Record<string, any>): void {
+  // Episode and score requests whose handler has not answered yet, by request key: a request
+  // sent again meanwhile gets the one answer when it comes.
+  #episodes = new Set<string>();
+
+  async #onEpisode(presence: Presence, msg: Record<string, any>): Promise<void> {
     const info = presenceInfo(presence);
+    const key = reqKey(presence, msg.id);
+    if (this.#episodes.has(key)) return;
+    this.#episodes.add(key);
     try {
       if (msg.type === "episode") {
         if (!this.#h.episode) throw new Refused("unsupported", "this space has no episodes");
-        const result = this.#h.episode({ task: msg.task, seed: msg.seed, presence: info });
+        const result = await this.#h.episode({ task: msg.task, seed: msg.seed, presence: info });
         const [entry] = this.#append([{ source: `presence/${presence.id}`, type: "asp.episode", data: stripUndefined({ episode: result.episode, task: msg.task, seed: msg.seed }) }]);
         return this.#finishSimple(presence, msg, { end: "done", result }, true, entry.seq);
       }
       const evaluator = this.capabilities.episode?.evaluator ?? "evaluator";
       if (presence.role !== evaluator) throw new Refused("forbidden", `only the ${evaluator} role receives scores`);
       if (!this.#h.score) throw new Refused("unsupported", "this space gives no scores");
-      const score = this.#h.score({ episode: msg.episode, presence: info });
+      const score = await this.#h.score({ episode: msg.episode, presence: info });
       const [entry] = this.#append([{ source: "space", type: "asp.score", roles: [evaluator], data: { episode: score.episode, score: score.score } }]);
       this.#finishSimple(presence, msg, { end: "done", result: score as unknown as JSONValue }, false, entry.seq);
     } catch (e) {
       if (!(e instanceof Refused)) throw e;
       this.#finishSimple(presence, msg, { end: "refused", reason: reasonOf(e.code, e.text, e.data) }, msg.type === "episode");
+    } finally {
+      this.#episodes.delete(key);
     }
   }
 
