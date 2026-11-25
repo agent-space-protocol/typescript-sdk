@@ -850,7 +850,7 @@ export interface DefaultOutcome {
  */
 export interface Reason {
   /**
-   * A protocol reason, or a namespaced code such as `onebot.timeout`.
+   * A protocol reason, or a namespaced code such as `chat.delivery_timeout`.
    */
   code: string;
   /**
@@ -1798,7 +1798,7 @@ export interface Outcome {
  */
 export interface Reason1 {
   /**
-   * A protocol reason, or a namespaced code such as `onebot.timeout`.
+   * A protocol reason, or a namespaced code such as `chat.delivery_timeout`.
    */
   code: string;
   /**
@@ -2396,7 +2396,7 @@ export interface Presentation1 {
  */
 export interface Reason2 {
   /**
-   * A protocol reason, or a namespaced code such as `onebot.timeout`.
+   * A protocol reason, or a namespaced code such as `chat.delivery_timeout`.
    */
   code: string;
   /**

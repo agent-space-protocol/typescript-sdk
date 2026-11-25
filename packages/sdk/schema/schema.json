@@ -1778,7 +1778,7 @@
       "type": "object",
       "properties": {
         "code": {
-          "description": "A protocol reason, or a namespaced code such as `onebot.timeout`.",
+          "description": "A protocol reason, or a namespaced code such as `chat.delivery_timeout`.",
           "type": "string"
         },
         "text": {
