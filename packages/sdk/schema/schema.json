@@ -1,0 +1,2886 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentspaceprotocol.org/schema/[object Object]/schema.json",
+  "title": "Agent Space Protocol",
+  "description": "Every message of the Agent Space Protocol. Generated from schema.ts; do not edit by hand.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Message"
+    }
+  ],
+  "$defs": {
+    "Accepted": {
+      "description": "An action has been accepted and is under way.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "accepted"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "seq": {
+          "description": "The sequence number of the action's own record entry.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "Act": {
+      "description": "An action. Answered by intermediate states and exactly one final `outcome`. Sending the same ID\nagain only returns the first outcome or the current intermediate state.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "act"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "verb": {
+          "description": "The verb, named in the vocabulary.",
+          "type": "string"
+        },
+        "object": {
+          "description": "The thing acted on.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The parameters, as the verb's schema describes.",
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "basis": {
+          "description": "The record sequence number of the observation the action is based on.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "deadline": {
+          "description": "How long the action may take, in seconds from when the space receives it. When it passes\nthe space stops the action.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "verb"
+      ]
+    },
+    "AddChange": {
+      "description": "Add a thing.",
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "add"
+        },
+        "thing": {
+          "$ref": "#/$defs/Thing",
+          "description": "The new thing."
+        }
+      },
+      "required": [
+        "op",
+        "thing"
+      ]
+    },
+    "BlobMessage": {
+      "description": "Large content.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "blob"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "hash": {
+          "description": "The hash of the content.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "media": {
+          "description": "Its media type.",
+          "type": "string"
+        },
+        "data": {
+          "description": "The content in base64.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "data",
+        "hash",
+        "id",
+        "media",
+        "type"
+      ]
+    },
+    "BlobRequest": {
+      "description": "Fetch large content by hash. Answered with `blob`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "blob"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "hash": {
+          "description": "The hash of the content.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "hash",
+        "id",
+        "type"
+      ]
+    },
+    "Cancel": {
+      "description": "Ask to cancel an action or edit of this participant. Cancelling is only a request: the action\nstill gets its own final outcome, `cancelled` if it stopped, `done` if it finished first, or\n`unknown`. Has no ID and no answer of its own.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "cancel"
+        },
+        "action": {
+          "description": "The ID of the action, edit or stream to cancel.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "type"
+      ]
+    },
+    "Capabilities": {
+      "description": "The capability table of a space, declared item by item. A capability that is not declared is\nunsupported: using it gets `refused` with the reason `unsupported` (or, for a message without\nan ID, an `error` with the code `unsupported`). A capability declared with an empty object is\nread at its most conservative value.",
+      "type": "object",
+      "properties": {
+        "state": {
+          "description": "Where the state is: `held` by the space itself, or `external`, reached by an adapter.",
+          "enum": [
+            "external",
+            "held"
+          ],
+          "type": "string"
+        },
+        "lifetime": {
+          "description": "Whether the space lasts or is thrown away after use.",
+          "enum": [
+            "disposable",
+            "lasting"
+          ],
+          "type": "string"
+        },
+        "participants": {
+          "description": "Participants, roles and presences.",
+          "$ref": "#/$defs/ParticipantsCapability"
+        },
+        "forms": {
+          "description": "The observation forms the space offers. `structure` is always available and need not be\nlisted. Each name refers to a form declared in the vocabulary, which gives its media type.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inputs": {
+          "description": "The media types an action's parameters may carry, such as `audio/ogg` or `image/png`.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "edit": {
+          "description": "Editing the world itself.",
+          "$ref": "#/$defs/EditCapability"
+        },
+        "snapshot": {
+          "description": "Saving and restoring.",
+          "$ref": "#/$defs/SnapshotCapability"
+        },
+        "episode": {
+          "description": "Episodes started from a task and a seed.",
+          "$ref": "#/$defs/EpisodeCapability"
+        },
+        "pace": {
+          "description": "The pace of the space.",
+          "$ref": "#/$defs/PaceCapability"
+        },
+        "consent": {
+          "description": "Actions that wait for another participant's agreement before they run.",
+          "$ref": "#/$defs/ConsentCapability"
+        },
+        "pause": {
+          "description": "Holding an action under way and continuing it later.",
+          "$ref": "#/$defs/PauseCapability"
+        },
+        "senses": {
+          "description": "Derived observations placed by participants.",
+          "$ref": "#/$defs/SensesCapability"
+        },
+        "views": {
+          "description": "The space's own interfaces, for hosts to embed.",
+          "$ref": "#/$defs/ViewsCapability"
+        },
+        "doors": {
+          "description": "Links to other spaces.",
+          "$ref": "#/$defs/DoorsCapability"
+        }
+      }
+    },
+    "CapabilityKey": {
+      "enum": [
+        "consent",
+        "doors",
+        "edit",
+        "episode",
+        "forms",
+        "inputs",
+        "lifetime",
+        "pace",
+        "participants",
+        "pause",
+        "senses",
+        "snapshot",
+        "state",
+        "views"
+      ],
+      "type": "string"
+    },
+    "Change": {
+      "description": "One structured change of an edit. Namespaced kinds of change may be declared by a space.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AddChange"
+        },
+        {
+          "$ref": "#/$defs/SetChange"
+        },
+        {
+          "$ref": "#/$defs/RemoveChange"
+        },
+        {
+          "$ref": "#/$defs/RelateChange"
+        },
+        {
+          "$ref": "#/$defs/UnrelateChange"
+        }
+      ]
+    },
+    "ConsentCapability": {
+      "description": "The `consent` capability.",
+      "type": "object",
+      "properties": {
+        "verbs": {
+          "description": "The verbs that wait for consent, by verb name.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ConsentRule"
+          }
+        }
+      }
+    },
+    "ConsentMessage": {
+      "description": "Capability `consent`: agree to or refuse a waiting action. Answered with an `outcome`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "consent"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "act": {
+          "description": "The sequence number of the waiting action's record entry.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "agree": {
+          "description": "Whether to agree.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "act",
+        "agree",
+        "id",
+        "type"
+      ]
+    },
+    "ConsentRule": {
+      "description": "Who must agree to a verb, and how long the space waits.",
+      "type": "object",
+      "properties": {
+        "by": {
+          "description": "The role whose presences may agree.",
+          "type": "string"
+        },
+        "seconds": {
+          "description": "How long the space waits, in seconds. A consent nobody answers in this time ends the action\nas `cancelled` with the reason `deadline`.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "by",
+        "seconds"
+      ]
+    },
+    "ConstraintDecl": {
+      "description": "A constraint.",
+      "type": "object",
+      "properties": {
+        "line": {
+          "description": "One line saying what must hold.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "line"
+      ]
+    },
+    "DefaultOutcome": {
+      "description": "The default outcome of a verb.",
+      "type": "object",
+      "properties": {
+        "end": {
+          "description": "`done` (with nothing changed) or `refused`.",
+          "enum": [
+            "done",
+            "refused"
+          ],
+          "type": "string"
+        },
+        "reason": {
+          "description": "The reason, required when `end` is `refused`.",
+          "$ref": "#/$defs/Reason"
+        }
+      },
+      "required": [
+        "end"
+      ]
+    },
+    "Door": {
+      "description": "A door: a thing on this side that points to another space.",
+      "type": "object",
+      "properties": {
+        "thing": {
+          "description": "The thing that is the door on this side.",
+          "type": "string"
+        },
+        "to": {
+          "description": "The address of the space on the other side.",
+          "type": "string"
+        },
+        "space": {
+          "description": "The identity of the space on the other side, which signs its passes.",
+          "pattern": "^(ed25519:[A-Za-z0-9_-]{43}|token:.+)$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "thing",
+        "to"
+      ]
+    },
+    "DoorsCapability": {
+      "description": "The `doors` capability.",
+      "type": "object",
+      "properties": {
+        "doors": {
+          "description": "The doors of this space.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Door"
+          }
+        },
+        "takes": {
+          "description": "Whether the space accepts things handed over from other spaces.",
+          "type": "boolean"
+        }
+      }
+    },
+    "Edit": {
+      "description": "An edit: structured changes, or a sentence. Gets a final outcome like an action.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "edit"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "changes": {
+          "description": "Structured changes, committed atomically.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Change"
+          }
+        },
+        "sentence": {
+          "description": "A sentence, translated by the space into structured changes.",
+          "type": "string"
+        },
+        "basis": {
+          "description": "The observation the edit is based on.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "deadline": {
+          "description": "How long the edit may take, in seconds.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "EditCapability": {
+      "description": "The `edit` capability.",
+      "type": "object",
+      "properties": {
+        "roles": {
+          "description": "The roles that may edit. Each must also have `edit: true` in its role.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changes": {
+          "description": "The kinds of change accepted: `add`, `set`, `remove`, `relate`, `unrelate`, or namespaced kinds.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sentences": {
+          "description": "Whether edits written as a sentence are taken.",
+          "type": "boolean"
+        }
+      }
+    },
+    "Effect": {
+      "description": "An effect that did happen, listed by `failed`, `cancelled` and `unknown`.",
+      "type": "object",
+      "additionalProperties": {},
+      "properties": {
+        "thing": {
+          "description": "The thing affected, when there is one.",
+          "type": "string"
+        },
+        "text": {
+          "description": "One sentence describing the effect.",
+          "type": "string"
+        }
+      }
+    },
+    "EffectClass": {
+      "description": "The class of a verb's effect, from which a participant decides whether to ask its owner first.\n\n- `read`: reads only.\n- `change`: changes this space.\n- `send`: sends to others: a new recipient, forwarding, publishing.\n- `spend`: spends money.\n- `irreversible`: cannot be undone.",
+      "enum": [
+        "change",
+        "irreversible",
+        "read",
+        "send",
+        "spend"
+      ],
+      "type": "string"
+    },
+    "End": {
+      "description": "The five final outcomes.\n\n- `done`: carried out; has the result and the events it caused.\n- `refused`: nothing happened; decided before any effect.\n- `failed`: tried and not achieved; lists the effects that did happen.\n- `cancelled`: confirmed stopped; lists the effects from before it stopped.\n- `unknown`: may or may not have happened; says what is known and what is not confirmed.",
+      "enum": [
+        "cancelled",
+        "done",
+        "failed",
+        "refused",
+        "unknown"
+      ],
+      "type": "string"
+    },
+    "Entries": {
+      "description": "Entries of the record, projected for this presence.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "entries"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "entries": {
+          "description": "The entries, in order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Entry"
+          }
+        },
+        "head": {
+          "description": "The latest sequence number.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "earliest": {
+          "description": "The earliest sequence number kept.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "more": {
+          "description": "Whether more entries match than were returned.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "earliest",
+        "entries",
+        "head",
+        "id",
+        "type"
+      ]
+    },
+    "Entry": {
+      "description": "One entry of the record. The envelope follows CloudEvents 1.0 in its JSON format: `id`,\n`source`, `type` and `specversion` are always present. ASP adds `seq`, `aspcore`, `cause`,\n`things` and `roles`.",
+      "type": "object",
+      "properties": {
+        "specversion": {
+          "description": "The CloudEvents version, always `1.0`.",
+          "type": "string",
+          "const": "1.0"
+        },
+        "id": {
+          "description": "The entry's ID: its sequence number written as a decimal string.",
+          "type": "string"
+        },
+        "source": {
+          "description": "Who caused the entry.",
+          "pattern": "^(space|presence/.+|outside(/.+)?)$",
+          "type": "string"
+        },
+        "type": {
+          "description": "The kind of entry. Kinds of the protocol start with `asp.`; the space's own kinds of event\nare named in its vocabulary.",
+          "type": "string"
+        },
+        "time": {
+          "description": "When the entry was appended.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "seq": {
+          "description": "The record sequence number.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "aspcore": {
+          "description": "The version of the core part the entry was written with.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "cause": {
+          "description": "The sequence number of the entry that led to this one, so anything can be traced back to where it started.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "things": {
+          "description": "The things involved.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "roles": {
+          "description": "If present, only these roles receive the entry.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "datacontenttype": {
+          "description": "The media type of `data`, `application/json` when absent.",
+          "type": "string"
+        },
+        "data": {
+          "description": "The content of the entry.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": [
+                "null",
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          ]
+        },
+        "dataref": {
+          "description": "Large content stored only as a hash and fetched with `blob`.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "aspcore",
+        "id",
+        "seq",
+        "source",
+        "specversion",
+        "time",
+        "type"
+      ]
+    },
+    "EntrySource": {
+      "description": "The source of a record entry: `space` for the space itself, `presence/<presence>` for a\nparticipant's presence, and `outside` or `outside/<who>` for participants outside the protocol.",
+      "pattern": "^(space|presence/.+|outside(/.+)?)$",
+      "type": "string"
+    },
+    "EpisodeCapability": {
+      "description": "The `episode` capability.",
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "description": "The tasks an episode can be started from.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evaluator": {
+          "description": "The role that receives scores. Defaults to `evaluator`.",
+          "type": "string"
+        }
+      }
+    },
+    "EpisodeRequest": {
+      "description": "Capability `episode`: start an episode from a task and a seed.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "episode"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "task": {
+          "description": "The task.",
+          "type": "string"
+        },
+        "seed": {
+          "description": "The seed.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "ErrorMessage": {
+      "description": "A protocol error, only for messages without an ID (such as `hello` or `cancel`). A message\nwith an ID is always answered with an outcome instead.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "error"
+        },
+        "code": {
+          "description": "A protocol reason, or a namespaced code.",
+          "type": "string"
+        },
+        "text": {
+          "description": "One sentence.",
+          "type": "string"
+        },
+        "about": {
+          "description": "The type of the message the error is about.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "type"
+      ]
+    },
+    "EventDecl": {
+      "description": "A kind of event.",
+      "type": "object",
+      "properties": {
+        "line": {
+          "description": "One line describing the event.",
+          "type": "string"
+        },
+        "data": {
+          "description": "The content of the event, as a JSON Schema.",
+          "$ref": "#/$defs/JSONSchemaObject"
+        },
+        "perceived": {
+          "description": "Who perceives it: everyone, or only those within range of the things involved.",
+          "enum": [
+            "all",
+            "range"
+          ],
+          "type": "string"
+        }
+      }
+    },
+    "EventMessage": {
+      "description": "A record entry pushed to a subscribed presence, or the closing event pushed to every connection.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "event"
+        },
+        "entry": {
+          "$ref": "#/$defs/Entry",
+          "description": "The entry."
+        }
+      },
+      "required": [
+        "entry",
+        "type"
+      ]
+    },
+    "FormContent": {
+      "description": "One observation in a form other than structure. Either `data` or `blob` is present.",
+      "type": "object",
+      "properties": {
+        "media": {
+          "description": "The media type, as declared for the form in the vocabulary.",
+          "type": "string"
+        },
+        "data": {
+          "description": "The content: text as is, binary content as base64.",
+          "type": "string"
+        },
+        "blob": {
+          "description": "Large content stored by hash and fetched with `blob`.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "media"
+      ]
+    },
+    "FormDecl": {
+      "description": "An observation form.",
+      "type": "object",
+      "properties": {
+        "media": {
+          "description": "The media type of the form.",
+          "type": "string"
+        },
+        "continuous": {
+          "description": "Whether it is continuous, subscribed to as a stream.",
+          "type": "boolean"
+        },
+        "line": {
+          "description": "One line describing the form.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "media"
+      ]
+    },
+    "Frame": {
+      "description": "One frame of a stream.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "frame"
+        },
+        "stream": {
+          "description": "The ID of the `stream` request.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "n": {
+          "description": "The frame's number in the stream, from 0.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "time": {
+          "description": "When the frame was taken.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "content": {
+          "$ref": "#/$defs/FormContent",
+          "description": "The content."
+        }
+      },
+      "required": [
+        "content",
+        "n",
+        "stream",
+        "time",
+        "type"
+      ]
+    },
+    "Hash": {
+      "description": "A content hash: `sha256:` followed by 64 lowercase hexadecimal digits. Structured content is\nhashed in its RFC 8785 canonical JSON form.",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "Hidden": {
+      "description": "What a role does not see.",
+      "type": "object",
+      "properties": {
+        "properties": {
+          "description": "Property names left out of every thing this role observes.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "events": {
+          "description": "Kinds of record entries this role never receives.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Identity": {
+      "description": "The identity of a participant or a space: `ed25519:` followed by the unpadded base64url form of\nthe 32-byte Ed25519 public key. A participant that connects with a local token is shown as\n`token:<name>`; one with neither is anonymous and is known only by its presence.",
+      "pattern": "^(ed25519:[A-Za-z0-9_-]{43}|token:.+)$",
+      "type": "string"
+    },
+    "JSONSchemaObject": {
+      "description": "A JSON Schema (2020-12) describing a value.",
+      "type": "object",
+      "additionalProperties": {}
+    },
+    "JSONValue": {
+      "description": "Any JSON value.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        },
+        {
+          "type": [
+            "null",
+            "string",
+            "number",
+            "boolean"
+          ]
+        }
+      ]
+    },
+    "Join": {
+      "description": "Start a presence, or resume one after a disconnect. Answered with an `outcome` whose result is a\n`JoinResult`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "join"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "role": {
+          "description": "The role asked for. The space decides the role given.",
+          "type": "string"
+        },
+        "presentation": {
+          "description": "Presentation preferences.",
+          "$ref": "#/$defs/Presentation"
+        },
+        "proof": {
+          "description": "Proof of identity: the unpadded base64url Ed25519 signature, by the key named in `hello`, of\nthe UTF-8 bytes of `asp-v0 join <space> <nonce>`.",
+          "type": "string"
+        },
+        "resume": {
+          "description": "Resume a presence kept after a disconnect, with the token from its `JoinResult`.",
+          "type": "string"
+        },
+        "pass": {
+          "description": "A pass signed by another space, for a participant arriving through a door.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "JoinResult": {
+      "description": "The result of a successful `join`.",
+      "type": "object",
+      "properties": {
+        "presence": {
+          "description": "The ID of the presence.",
+          "type": "string"
+        },
+        "role": {
+          "description": "The role given.",
+          "type": "string"
+        },
+        "participant": {
+          "description": "The participant's identity as the space knows it.",
+          "pattern": "^(ed25519:[A-Za-z0-9_-]{43}|token:.+)$",
+          "type": "string"
+        },
+        "range": {
+          "description": "The range of perception, when the space limits it.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": [
+                "null",
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          ]
+        },
+        "presentation": {
+          "description": "What was done with each presentation preference.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/PresentationUse"
+          }
+        },
+        "resume": {
+          "description": "A secret token to resume this presence within the grace period.",
+          "type": "string"
+        },
+        "resumed": {
+          "description": "Whether an existing presence was resumed.",
+          "type": "boolean"
+        },
+        "head": {
+          "description": "The latest record sequence number when the presence started.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "head",
+        "presence",
+        "resume",
+        "role"
+      ]
+    },
+    "Leave": {
+      "description": "End a presence. Answered with an `outcome`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "leave"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "cancel": {
+          "description": "Whether actions under way are cancelled with it. Otherwise they run to their own outcomes.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "Message": {
+      "description": "Every ASP message.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ParticipantHello"
+        },
+        {
+          "$ref": "#/$defs/SpaceHello"
+        },
+        {
+          "$ref": "#/$defs/Join"
+        },
+        {
+          "$ref": "#/$defs/Leave"
+        },
+        {
+          "$ref": "#/$defs/Observe"
+        },
+        {
+          "$ref": "#/$defs/Observation"
+        },
+        {
+          "$ref": "#/$defs/Subscribe"
+        },
+        {
+          "$ref": "#/$defs/Subscribed"
+        },
+        {
+          "$ref": "#/$defs/Act"
+        },
+        {
+          "$ref": "#/$defs/Edit"
+        },
+        {
+          "$ref": "#/$defs/Cancel"
+        },
+        {
+          "$ref": "#/$defs/Accepted"
+        },
+        {
+          "$ref": "#/$defs/Progress"
+        },
+        {
+          "$ref": "#/$defs/Waiting"
+        },
+        {
+          "$ref": "#/$defs/Outcome"
+        },
+        {
+          "$ref": "#/$defs/EventMessage"
+        },
+        {
+          "$ref": "#/$defs/RecordRequest"
+        },
+        {
+          "$ref": "#/$defs/Entries"
+        },
+        {
+          "$ref": "#/$defs/VocabularyRequest"
+        },
+        {
+          "$ref": "#/$defs/VocabularyMessage"
+        },
+        {
+          "$ref": "#/$defs/BlobRequest"
+        },
+        {
+          "$ref": "#/$defs/BlobMessage"
+        },
+        {
+          "$ref": "#/$defs/ErrorMessage"
+        },
+        {
+          "$ref": "#/$defs/StreamRequest"
+        },
+        {
+          "$ref": "#/$defs/Frame"
+        },
+        {
+          "$ref": "#/$defs/ConsentMessage"
+        },
+        {
+          "$ref": "#/$defs/SnapshotRequest"
+        },
+        {
+          "$ref": "#/$defs/RestoreRequest"
+        },
+        {
+          "$ref": "#/$defs/EpisodeRequest"
+        },
+        {
+          "$ref": "#/$defs/ScoreRequest"
+        },
+        {
+          "$ref": "#/$defs/PauseRequest"
+        },
+        {
+          "$ref": "#/$defs/ResumeRequest"
+        },
+        {
+          "$ref": "#/$defs/SenseRequest"
+        },
+        {
+          "$ref": "#/$defs/ViewsRequest"
+        },
+        {
+          "$ref": "#/$defs/Offer"
+        },
+        {
+          "$ref": "#/$defs/Take"
+        }
+      ]
+    },
+    "NamespaceInfo": {
+      "description": "A namespace of a vocabulary and the package it comes from.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "description": "The package's version, `major.minor.patch`. Within a major version a package only adds.",
+          "type": "string"
+        },
+        "line": {
+          "description": "One line describing the namespace.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version"
+      ]
+    },
+    "NegotiatedParts": {
+      "description": "The version used for each part, the highest version both sides support. A part with no\nversion in common is left out and counts as unsupported for this connection.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "properties": {
+        "core": {
+          "description": "The version of the core used.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "core"
+      ]
+    },
+    "Observation": {
+      "description": "One observation: a projection of the state for this presence.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "observation"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "seq": {
+          "description": "The record sequence number the observation is at. Observations at the same number have the same content.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "confirmed": {
+          "description": "When an external state was last confirmed.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "structure": {
+          "$ref": "#/$defs/Structure",
+          "description": "The structure, always present."
+        },
+        "forms": {
+          "description": "The other forms asked for, by name.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/FormContent"
+          }
+        },
+        "senses": {
+          "description": "The values of derived observations placed by this presence, by name.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "seq",
+        "structure",
+        "type"
+      ]
+    },
+    "Observe": {
+      "description": "Ask for one observation in the forms asked for. Answered with `observation`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "observe"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "forms": {
+          "description": "The forms wanted, besides structure. Unknown or undeclared forms are refused.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "Offer": {
+      "description": "Capability `doors`: hand a thing over to this space, or ask to pass through one of its doors.\n\n- With `thing`, the sender (another space, acting as a participant) offers the thing; the outcome\n  is `done` once this space has taken it and recorded `asp.take`, with an `OfferResult`.\n- With `door` and no `thing`, a participant asks to pass through the door; the outcome is `done`\n  with a `PassResult`, and the presence ends here.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "offer"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "thing": {
+          "description": "The thing handed over, with the chain of its parent types.",
+          "$ref": "#/$defs/OfferedThing"
+        },
+        "door": {
+          "description": "The door.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "OfferResult": {
+      "description": "The result of a taken offer.",
+      "type": "object",
+      "properties": {
+        "thing": {
+          "description": "The ID the thing has in this space.",
+          "type": "string"
+        },
+        "as": {
+          "description": "The type it is treated as, the nearest known one.",
+          "type": "string"
+        },
+        "take": {
+          "description": "The sequence number of the `asp.take` entry.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "as",
+        "take",
+        "thing"
+      ]
+    },
+    "OfferedThing": {
+      "description": "A thing as handed over through a door.",
+      "type": "object",
+      "properties": {
+        "parents": {
+          "description": "Its parent types, nearest first, so the receiver can fall back to one it knows.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "description": "The ID of the thing.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the thing, named in the vocabulary.",
+          "type": "string"
+        },
+        "confirmed": {
+          "description": "When an external state confirmed this thing, if it differs from the observation.",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "Outcome": {
+      "description": "The final outcome of an action, an edit or any other request. Exactly one per ID.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "outcome"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "end": {
+          "$ref": "#/$defs/End",
+          "description": "The final outcome."
+        },
+        "seq": {
+          "description": "The sequence number of the outcome's record entry, when it is recorded.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "description": "Why, for every end except `done`, and optionally for `done`.",
+          "$ref": "#/$defs/Reason"
+        },
+        "result": {
+          "description": "The result of `done`.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": [
+                "null",
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          ]
+        },
+        "effects": {
+          "description": "The effects that did happen, for `failed`, `cancelled` and `unknown`.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Effect"
+          }
+        },
+        "events": {
+          "description": "The sequence numbers of the events it caused.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "known": {
+          "description": "For `unknown`: what is known.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        },
+        "unconfirmed": {
+          "description": "For `unknown`: what is not confirmed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "end",
+        "id",
+        "type"
+      ]
+    },
+    "PaceCapability": {
+      "description": "The `pace` capability.",
+      "type": "object",
+      "properties": {
+        "max_hz": {
+          "description": "The most actions a second for each presence.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "clock": {
+          "description": "Whether time follows the wall clock or advances in steps.",
+          "enum": [
+            "stepped",
+            "wall"
+          ],
+          "type": "string"
+        },
+        "step_seconds": {
+          "description": "How long one step is, in seconds, when the clock advances in steps.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      }
+    },
+    "PartName": {
+      "description": "The names of the parts of the protocol. `core` covers entering, observing, acting, editing,\noutcomes, events, the record and the vocabulary. Every other part belongs to the capability of\nthe same name. A part name outside this list must carry a namespace.",
+      "type": "string"
+    },
+    "PartVersion": {
+      "description": "An integer version of one part of the protocol.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "ParticipantHello": {
+      "description": "The participant's half of the handshake, the first message on a connection.\nThe participant states the versions it supports for each part and, optionally, its identity.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "hello"
+        },
+        "parts": {
+          "$ref": "#/$defs/SupportedParts",
+          "description": "The versions the participant supports for each part."
+        },
+        "participant": {
+          "description": "The participant's public key, if it has one. Proven with `proof` in `join`.",
+          "pattern": "^(ed25519:[A-Za-z0-9_-]{43}|token:.+)$",
+          "type": "string"
+        },
+        "token": {
+          "description": "A local token, used instead of a key between processes on one computer.",
+          "type": "string"
+        },
+        "client": {
+          "description": "The participant's software, for logs.",
+          "$ref": "#/$defs/Software"
+        }
+      },
+      "required": [
+        "parts",
+        "type"
+      ]
+    },
+    "ParticipantMessage": {
+      "description": "Every message a participant sends to a space.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ParticipantHello"
+        },
+        {
+          "$ref": "#/$defs/Join"
+        },
+        {
+          "$ref": "#/$defs/Leave"
+        },
+        {
+          "$ref": "#/$defs/Observe"
+        },
+        {
+          "$ref": "#/$defs/Subscribe"
+        },
+        {
+          "$ref": "#/$defs/Act"
+        },
+        {
+          "$ref": "#/$defs/Edit"
+        },
+        {
+          "$ref": "#/$defs/Cancel"
+        },
+        {
+          "$ref": "#/$defs/RecordRequest"
+        },
+        {
+          "$ref": "#/$defs/VocabularyRequest"
+        },
+        {
+          "$ref": "#/$defs/BlobRequest"
+        },
+        {
+          "$ref": "#/$defs/StreamRequest"
+        },
+        {
+          "$ref": "#/$defs/ConsentMessage"
+        },
+        {
+          "$ref": "#/$defs/SnapshotRequest"
+        },
+        {
+          "$ref": "#/$defs/RestoreRequest"
+        },
+        {
+          "$ref": "#/$defs/EpisodeRequest"
+        },
+        {
+          "$ref": "#/$defs/ScoreRequest"
+        },
+        {
+          "$ref": "#/$defs/PauseRequest"
+        },
+        {
+          "$ref": "#/$defs/ResumeRequest"
+        },
+        {
+          "$ref": "#/$defs/SenseRequest"
+        },
+        {
+          "$ref": "#/$defs/ViewsRequest"
+        },
+        {
+          "$ref": "#/$defs/Offer"
+        },
+        {
+          "$ref": "#/$defs/Take"
+        }
+      ]
+    },
+    "ParticipantsCapability": {
+      "description": "The `participants` capability.",
+      "type": "object",
+      "properties": {
+        "max": {
+          "description": "How many presences at most.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "roles": {
+          "description": "The roles of the space, by name. Defaults are `owner`, `member` and `guest`.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Role"
+          }
+        },
+        "default_role": {
+          "description": "The role given when `join` asks for none.",
+          "type": "string"
+        },
+        "outside": {
+          "description": "Whether there are participants outside the protocol, whose changes appear as events with the source `outside`.",
+          "type": "boolean"
+        },
+        "grace_seconds": {
+          "description": "How long a presence is kept after its connection drops, in seconds. Within this time the\nparticipant can resume the presence with `join` and its `resume` token.",
+          "minimum": 0,
+          "type": "number"
+        }
+      }
+    },
+    "PassResult": {
+      "description": "The result of passing through a door.",
+      "type": "object",
+      "properties": {
+        "to": {
+          "description": "The address of the space on the other side.",
+          "type": "string"
+        },
+        "pass": {
+          "description": "The pass, signed by this space, to give in `join` over there.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pass",
+        "to"
+      ]
+    },
+    "PauseCapability": {
+      "description": "The `pause` capability.",
+      "type": "object",
+      "properties": {
+        "verbs": {
+          "description": "The verbs whose actions can be paused. Absent means every verb.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "PauseRequest": {
+      "description": "Capability `pause`: hold an action under way.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "pause"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "action": {
+          "description": "The ID of this participant's action.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "id",
+        "type"
+      ]
+    },
+    "Presentation": {
+      "description": "Presentation preferences a participant hands over on entering. The space decides whether to\nuse them as they are, convert them or use its own default.",
+      "type": "object",
+      "additionalProperties": {},
+      "properties": {
+        "name": {
+          "description": "A name.",
+          "type": "string"
+        },
+        "avatar": {
+          "description": "An avatar image, by hash.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "model": {
+          "description": "A VRM model, by hash.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "line": {
+          "description": "One line describing the participant.",
+          "type": "string"
+        }
+      }
+    },
+    "PresentationUse": {
+      "description": "What the space did with each presentation preference.",
+      "enum": [
+        "converted",
+        "default",
+        "ignored",
+        "used"
+      ],
+      "type": "string"
+    },
+    "Progress": {
+      "description": "Progress of an action under way. May be sent any number of times.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "progress"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "progress": {
+          "description": "How far along, from 0 to 1, when known.",
+          "minimum": 0,
+          "maximum": 1,
+          "type": "number"
+        },
+        "text": {
+          "description": "One sentence on what is happening.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "ProtocolReason": {
+      "description": "The reasons defined by the protocol. Any other reason code carries a namespace.\n\n- `unsupported`: a capability, part, message or verb the space does not have.\n- `forbidden`: the presence's role may not do this.\n- `malformed`: the message does not match the schema or the verb's parameters.\n- `stale`: the observation named by `basis` is out of date and the verb refuses stale actions.\n- `constraint`: the change would break a constraint; nothing was changed.\n- `deadline`: the deadline, or the time to wait for consent, passed.\n- `closed`: the space closed, or the presence ended.\n- `restarted`: the space restarted and could not confirm the outcome.\n- `expired`: the record no longer keeps what was asked for.",
+      "enum": [
+        "closed",
+        "constraint",
+        "deadline",
+        "expired",
+        "forbidden",
+        "malformed",
+        "restarted",
+        "stale",
+        "unsupported"
+      ],
+      "type": "string"
+    },
+    "QualifiedName": {
+      "description": "A namespaced name: a vocabulary namespace, a dot, and the local name, for example `chat.reply`.\nNames that start with `asp.` belong to the protocol.",
+      "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z0-9_-]+)+$",
+      "type": "string"
+    },
+    "Reason": {
+      "description": "A reason: a code and one sentence.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "A protocol reason, or a namespaced code such as `onebot.timeout`.",
+          "type": "string"
+        },
+        "text": {
+          "description": "One sentence for people and models.",
+          "type": "string"
+        },
+        "data": {
+          "description": "Details, such as the name of the broken constraint.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/JSONValue"
+              }
+            },
+            {
+              "type": [
+                "null",
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "code"
+      ]
+    },
+    "RecordInfo": {
+      "description": "What a space says about its record in `hello`.",
+      "type": "object",
+      "properties": {
+        "head": {
+          "description": "The sequence number of the latest entry, 0 for an empty record.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "earliest": {
+          "description": "The earliest sequence number still kept. Queries before it are answered with `expired`.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "keep_seconds": {
+          "description": "How long entries are kept, in seconds; `null` means for ever.",
+          "minimum": 0,
+          "type": [
+            "null",
+            "number"
+          ]
+        }
+      },
+      "required": [
+        "earliest",
+        "head",
+        "keep_seconds"
+      ]
+    },
+    "RecordRequest": {
+      "description": "Fetch the record by sequence numbers or by time. Answered with `entries`, or with an `outcome`\n`refused` with the reason `expired` when the range starts before the earliest entry kept.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "record"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "from": {
+          "description": "The first sequence number.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "to": {
+          "description": "The last sequence number.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "since": {
+          "description": "Entries appended at or after this time.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "until": {
+          "description": "Entries appended before this time.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "limit": {
+          "description": "The most entries to return.",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "RelateChange": {
+      "description": "Add a relation.",
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "relate"
+        },
+        "relation": {
+          "$ref": "#/$defs/Relation",
+          "description": "The relation to add."
+        }
+      },
+      "required": [
+        "op",
+        "relation"
+      ]
+    },
+    "Relation": {
+      "description": "A relation between two things.",
+      "type": "object",
+      "properties": {
+        "rel": {
+          "description": "The kind of relation, named in the vocabulary, for example `room.in`.",
+          "type": "string"
+        },
+        "from": {
+          "description": "The thing the relation starts from.",
+          "type": "string"
+        },
+        "to": {
+          "description": "The thing the relation points to.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "rel",
+        "to"
+      ]
+    },
+    "RelationDecl": {
+      "description": "A kind of relation.",
+      "type": "object",
+      "properties": {
+        "from": {
+          "description": "The type at the start.",
+          "type": "string"
+        },
+        "to": {
+          "description": "The type at the end.",
+          "type": "string"
+        },
+        "many": {
+          "description": "How many targets one thing may have.",
+          "enum": [
+            "many",
+            "one"
+          ],
+          "type": "string"
+        },
+        "line": {
+          "description": "One line describing the relation.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
+    },
+    "RemoveChange": {
+      "description": "Remove a thing.",
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "remove"
+        },
+        "thing": {
+          "description": "The thing to remove.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "thing"
+      ]
+    },
+    "RequestId": {
+      "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+      "minLength": 1,
+      "maxLength": 128,
+      "type": "string"
+    },
+    "RestoreRequest": {
+      "description": "Capability `snapshot`: restore a saved state.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "restore"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "snapshot": {
+          "description": "The snapshot to restore.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "snapshot",
+        "type"
+      ]
+    },
+    "ResumeRequest": {
+      "description": "Capability `pause`: continue a held action.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "resume"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "action": {
+          "description": "The ID of this participant's action.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "id",
+        "type"
+      ]
+    },
+    "Role": {
+      "description": "A role and its permissions, after Matrix power levels.",
+      "type": "object",
+      "properties": {
+        "line": {
+          "description": "One line describing the role.",
+          "type": "string"
+        },
+        "verbs": {
+          "description": "The verbs this role may use. `[\"*\"]` means every verb in the vocabulary.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "edit": {
+          "description": "Whether this role may edit the world.",
+          "type": "boolean"
+        },
+        "consent": {
+          "description": "Whether this role may agree to or refuse waiting actions (capability `consent`).",
+          "type": "boolean"
+        },
+        "hide": {
+          "description": "What this role does not see in observations and in the record.",
+          "$ref": "#/$defs/Hidden"
+        }
+      }
+    },
+    "ScoreRequest": {
+      "description": "Capability `episode`: take the score of an episode. Only the evaluator role receives it.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "score"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "episode": {
+          "description": "The episode; the current one when absent.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "SenseRequest": {
+      "description": "Capability `senses`: place, list or remove a derived observation.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "sense"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "op": {
+          "description": "What to do.",
+          "enum": [
+            "list",
+            "place",
+            "remove"
+          ],
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the sense, for `place` and `remove`.",
+          "type": "string"
+        },
+        "language": {
+          "description": "The language the query is written in, one of those declared.",
+          "type": "string"
+        },
+        "query": {
+          "description": "The query or code, for `place`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "op",
+        "type"
+      ]
+    },
+    "SensesCapability": {
+      "description": "The `senses` capability.",
+      "type": "object",
+      "properties": {
+        "languages": {
+          "description": "The languages a derived observation can be written in, such as `jsonpath` or `javascript`.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "max": {
+          "description": "The most senses each presence may place.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "Seq": {
+      "description": "A record sequence number. The record of a space starts at 1 and every entry takes the next number.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "SetChange": {
+      "description": "Set one property of a thing.",
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set"
+        },
+        "thing": {
+          "description": "The thing to change.",
+          "type": "string"
+        },
+        "property": {
+          "description": "The property to set.",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/JSONValue",
+          "description": "The new value."
+        }
+      },
+      "required": [
+        "op",
+        "property",
+        "thing",
+        "value"
+      ]
+    },
+    "SnapshotCapability": {
+      "description": "The `snapshot` capability.",
+      "type": "object",
+      "properties": {
+        "restore": {
+          "description": "Whether a saved state can be restored.",
+          "type": "boolean"
+        }
+      }
+    },
+    "SnapshotRequest": {
+      "description": "Capability `snapshot`: save the state. The result of the outcome has the snapshot's hash.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "snapshot"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "Software": {
+      "description": "A piece of software and its version.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "SpaceHello": {
+      "description": "The space's half of the handshake. It gives the negotiated version of each part, the capability\ntable, the hash of the vocabulary, the state of the record and a random value the participant\nsigns to prove its identity.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "hello"
+        },
+        "space": {
+          "description": "The space's identifier: its key's identity, or an address-like name for a space without a key.",
+          "type": "string"
+        },
+        "parts": {
+          "$ref": "#/$defs/NegotiatedParts",
+          "description": "The version used for each part. Parts without a common version are left out."
+        },
+        "supported": {
+          "description": "The versions the space supports for each part.",
+          "$ref": "#/$defs/SupportedParts"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/Capabilities",
+          "description": "The capability table."
+        },
+        "vocabulary": {
+          "description": "The hash of the vocabulary.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "record": {
+          "$ref": "#/$defs/RecordInfo",
+          "description": "The state of the record."
+        },
+        "nonce": {
+          "description": "A random value, at least 16 bytes in base64url, that a participant with a key signs in `join`.",
+          "type": "string"
+        },
+        "key": {
+          "description": "The space's public key, which signs passes and saves.",
+          "pattern": "^(ed25519:[A-Za-z0-9_-]{43}|token:.+)$",
+          "type": "string"
+        },
+        "server": {
+          "description": "The space's software, for logs.",
+          "$ref": "#/$defs/Software"
+        }
+      },
+      "required": [
+        "capabilities",
+        "nonce",
+        "parts",
+        "record",
+        "space",
+        "type",
+        "vocabulary"
+      ]
+    },
+    "SpaceMessage": {
+      "description": "Every message a space sends to a participant.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SpaceHello"
+        },
+        {
+          "$ref": "#/$defs/Observation"
+        },
+        {
+          "$ref": "#/$defs/Subscribed"
+        },
+        {
+          "$ref": "#/$defs/Accepted"
+        },
+        {
+          "$ref": "#/$defs/Progress"
+        },
+        {
+          "$ref": "#/$defs/Waiting"
+        },
+        {
+          "$ref": "#/$defs/Outcome"
+        },
+        {
+          "$ref": "#/$defs/EventMessage"
+        },
+        {
+          "$ref": "#/$defs/Entries"
+        },
+        {
+          "$ref": "#/$defs/VocabularyMessage"
+        },
+        {
+          "$ref": "#/$defs/BlobMessage"
+        },
+        {
+          "$ref": "#/$defs/ErrorMessage"
+        },
+        {
+          "$ref": "#/$defs/Frame"
+        }
+      ]
+    },
+    "StreamRequest": {
+      "description": "Capability `forms`: subscribe to a continuous form such as video or sound. Answered with\n`accepted`, then `frame` messages, and a final `outcome` when the stream ends (`cancel` ends it).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "stream"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "form": {
+          "description": "The continuous form, as declared in the vocabulary.",
+          "type": "string"
+        },
+        "rate": {
+          "description": "Frames or samples a second.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "form",
+        "id",
+        "type"
+      ]
+    },
+    "Structure": {
+      "description": "The structure form: things, their properties and the relations between them, in the vocabulary's terms.",
+      "type": "object",
+      "properties": {
+        "things": {
+          "description": "The things this presence perceives.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Thing"
+          }
+        },
+        "relations": {
+          "description": "The relations between them.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relation"
+          }
+        }
+      },
+      "required": [
+        "things"
+      ]
+    },
+    "Subscribe": {
+      "description": "Subscribe to the record from a sequence number on: every entry this presence may see is pushed\nas an `event`, in order. A new `subscribe` replaces the previous one. Answered with `subscribed`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "subscribe"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "from": {
+          "description": "The first sequence number wanted; the next new entry when absent.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "kinds": {
+          "description": "Only these kinds of entry. All kinds when absent.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "Subscribed": {
+      "description": "The answer to `subscribe`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "subscribed"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "from": {
+          "description": "The first sequence number that will be pushed.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "head": {
+          "description": "The latest sequence number at the time of subscribing.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "from",
+        "head",
+        "id",
+        "type"
+      ]
+    },
+    "SupportedParts": {
+      "description": "The versions supported for each part, as sent by the side that offers them.\nEvery list is non-empty; a part that is not supported is left out.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "properties": {
+        "core": {
+          "description": "The versions of the core supported.",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "core"
+      ]
+    },
+    "Take": {
+      "description": "Capability `doors`: ask whether this space took an offer. The giving side asks after a\ndisconnect midway; the receiving side's record decides. The outcome's result is a `TakeResult`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "take"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "offer": {
+          "description": "The ID of the `offer`.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "offer",
+        "type"
+      ]
+    },
+    "TakeResult": {
+      "description": "Whether an offer was taken.",
+      "type": "object",
+      "properties": {
+        "taken": {
+          "description": "Whether the offer was taken.",
+          "type": "boolean"
+        },
+        "take": {
+          "description": "The sequence number of the `asp.take` entry.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "thing": {
+          "description": "The ID the thing has here.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "taken"
+      ]
+    },
+    "Thing": {
+      "description": "A thing as observed: its ID, its type and its properties, written as members of the object.\n`id` and `type` are reserved; every other member is a property named in the vocabulary.",
+      "type": "object",
+      "additionalProperties": {},
+      "properties": {
+        "id": {
+          "description": "The ID of the thing.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the thing, named in the vocabulary.",
+          "type": "string"
+        },
+        "confirmed": {
+          "description": "When an external state confirmed this thing, if it differs from the observation.",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "ThingId": {
+      "description": "The ID of a thing in a space, unique within that space, for example `lamp:1`.",
+      "type": "string"
+    },
+    "Time": {
+      "description": "A time as an RFC 3339 string in UTC, for example `2026-11-24T21:05:12Z`.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "TypeDecl": {
+      "description": "A kind of thing.",
+      "type": "object",
+      "properties": {
+        "parent": {
+          "description": "At most one parent type.",
+          "type": "string"
+        },
+        "line": {
+          "description": "One line describing the type.",
+          "type": "string"
+        },
+        "properties": {
+          "description": "The properties of things of this type, as a JSON Schema object schema.",
+          "$ref": "#/$defs/JSONSchemaObject"
+        }
+      }
+    },
+    "UnrelateChange": {
+      "description": "Remove a relation.",
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "unrelate"
+        },
+        "relation": {
+          "$ref": "#/$defs/Relation",
+          "description": "The relation to remove."
+        }
+      },
+      "required": [
+        "op",
+        "relation"
+      ]
+    },
+    "VerbDecl": {
+      "description": "A verb.",
+      "type": "object",
+      "properties": {
+        "line": {
+          "description": "One line describing the verb.",
+          "type": "string"
+        },
+        "object": {
+          "description": "The type of thing the verb acts on; absent when the verb takes no object.",
+          "type": "string"
+        },
+        "params": {
+          "description": "The parameters, as a JSON Schema. Media parameters name their media type with `contentMediaType`.",
+          "$ref": "#/$defs/JSONSchemaObject"
+        },
+        "effect": {
+          "$ref": "#/$defs/EffectClass",
+          "description": "The class of effect."
+        },
+        "outcomes": {
+          "description": "The final outcomes the verb can have.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/End"
+          }
+        },
+        "reasons": {
+          "description": "The reason codes the verb can give.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "default": {
+          "$ref": "#/$defs/DefaultOutcome",
+          "description": "The outcome when no specific law applies: done with nothing changed, or refused with a reason."
+        },
+        "stale": {
+          "description": "What happens when the action's `basis` is stale: `refuse` refuses with the reason `stale` if\nany thing the action touches has changed since; `allow` goes ahead. Absent means `allow`.",
+          "enum": [
+            "allow",
+            "refuse"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "default",
+        "effect"
+      ]
+    },
+    "View": {
+      "description": "One interface of a space: a web bundle fetched by hash. The bridge is specified in ext-views.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the interface.",
+          "type": "string"
+        },
+        "line": {
+          "description": "One line describing it.",
+          "type": "string"
+        },
+        "bundle": {
+          "description": "The web bundle, by hash.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "media": {
+          "description": "The bundle's media type.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bundle",
+        "media",
+        "name"
+      ]
+    },
+    "ViewsCapability": {
+      "description": "The `views` capability. Interfaces are listed with the `views` message.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "How many interfaces the space brings.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ViewsRequest": {
+      "description": "Capability `views`: list the space's own interfaces. The outcome's result is a `ViewsResult`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "views"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "ViewsResult": {
+      "description": "The interfaces a space brings.",
+      "type": "object",
+      "properties": {
+        "views": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/View"
+          }
+        }
+      },
+      "required": [
+        "views"
+      ]
+    },
+    "Vocabulary": {
+      "description": "The vocabulary of a space: what a participant can see, what it can do and what outcomes to\nexpect. Referenced by the hash of its canonical JSON and cacheable.",
+      "type": "object",
+      "properties": {
+        "namespaces": {
+          "description": "The namespaces it is assembled from, with the version of the package each comes from.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/NamespaceInfo"
+          }
+        },
+        "types": {
+          "description": "Kinds of things, by qualified name.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/TypeDecl"
+          }
+        },
+        "relations": {
+          "description": "Kinds of relations.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/RelationDecl"
+          }
+        },
+        "verbs": {
+          "description": "Verbs, the actions participants can take.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/VerbDecl"
+          }
+        },
+        "events": {
+          "description": "Kinds of events the space appends to its record.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/EventDecl"
+          }
+        },
+        "constraints": {
+          "description": "Conditions that must hold before every commit.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ConstraintDecl"
+          }
+        },
+        "forms": {
+          "description": "Observation forms.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/FormDecl"
+          }
+        },
+        "pages": {
+          "description": "Explanations for models: a full page per namespace, in Markdown.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "namespaces"
+      ]
+    },
+    "VocabularyMessage": {
+      "description": "The vocabulary.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "vocabulary"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "hash": {
+          "description": "Its hash.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "vocabulary": {
+          "$ref": "#/$defs/Vocabulary",
+          "description": "The vocabulary itself."
+        }
+      },
+      "required": [
+        "hash",
+        "id",
+        "type",
+        "vocabulary"
+      ]
+    },
+    "VocabularyRequest": {
+      "description": "Fetch the vocabulary. Answered with `vocabulary`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "vocabulary"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "hash": {
+          "description": "The hash wanted; the current vocabulary when absent.",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    },
+    "Waiting": {
+      "description": "An action waits for another participant to agree.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "waiting"
+        },
+        "id": {
+          "description": "The ID of a request: an action, an edit or any other message that expects an answer.\nUnique for the participant that sends it, for at least as long as the space keeps its record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "for": {
+          "description": "Whose consent it waits for.",
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "role"
+          ]
+        },
+        "act": {
+          "description": "The sequence number of the action's record entry, which consenting presences name.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "until": {
+          "description": "When the waiting ends as `cancelled`.",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "act",
+        "for",
+        "id",
+        "type",
+        "until"
+      ]
+    }
+  }
+}

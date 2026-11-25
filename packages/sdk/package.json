@@ -1,0 +1,63 @@
+{
+  "name": "@agent-space-protocol/sdk",
+  "version": "0.0.0",
+  "description": "TypeScript SDK for the Agent Space Protocol: participants, spaces, transports and identity",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agent-space-protocol/typescript-sdk.git",
+    "directory": "packages/sdk"
+  },
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./types": {
+      "types": "./dist/src/types/index.d.ts",
+      "default": "./dist/src/types/index.js"
+    },
+    "./participant": {
+      "types": "./dist/src/participant/index.d.ts",
+      "default": "./dist/src/participant/index.js"
+    },
+    "./space": {
+      "types": "./dist/src/space/index.d.ts",
+      "default": "./dist/src/space/index.js"
+    },
+    "./transport": {
+      "types": "./dist/src/transport/index.d.ts",
+      "default": "./dist/src/transport/index.js"
+    },
+    "./identity": {
+      "types": "./dist/src/identity.d.ts",
+      "default": "./dist/src/identity.js"
+    },
+    "./schema.json": "./schema/schema.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "generate": "node scripts/generate-types.ts",
+    "check": "node scripts/generate-types.ts --check",
+    "test": "node --test --test-concurrency=1 test/*.test.ts"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/ws": "^8.18.2",
+    "json-schema-to-typescript": "^16.0.0",
+    "typescript": "^5.9.3"
+  }
+}

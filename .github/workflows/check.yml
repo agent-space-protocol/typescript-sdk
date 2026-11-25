@@ -1,0 +1,26 @@
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: agent-space-protocol/agentspaceprotocol
+          path: spec
+          token: ${{ secrets.SPEC_READ_TOKEN || github.token }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: schema.json and the generated types match the specification
+        run: node scripts/generate-types.ts --sync ../../spec --check
+        working-directory: packages/sdk
+      - run: pnpm --filter @agent-space-protocol/sdk build
+      - run: pnpm --filter @agent-space-protocol/sdk test
