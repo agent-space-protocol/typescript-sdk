@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agentspaceprotocol.org/schema/[object Object]/schema.json",
+  "$id": "https://agentspaceprotocol.org/schema/v0/schema.json",
   "title": "Agent Space Protocol",
   "description": "Every message of the Agent Space Protocol. Generated from schema.ts; do not edit by hand.",
   "anyOf": [
